@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Szószerkezetek és az állítmány – hangos animáció</title>
+<style>
+:root{--bg:#FAF8F2;--card:#fff;--ink:#1E1540;--accent:#7C3AED;--accent-h:#6A48E8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17122B;--card:#211A3D;--ink:#E9E3FF;--accent:#A78BFA;--accent-h:#C4B5FD}}
+:root[data-theme="dark"]{--bg:#17122B;--card:#211A3D;--ink:#E9E3FF;--accent:#A78BFA;--accent-h:#C4B5FD}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+h1{font-size:1.4rem;margin:0 0 8px;text-align:center}
+p.sub{margin:0 0 24px;opacity:.75;text-align:center}
+.card{width:100%;max-width:520px;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:16px;box-sizing:border-box}
+svg{width:100%;height:auto;display:block}
+#vp{overflow:hidden;height:80px}
+#panel{position:sticky;bottom:0;z-index:5;width:100%;max-width:520px;margin-top:16px;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));background:var(--bg)}
+#cap{box-sizing:border-box;padding:12px 16px;border:2px solid var(--ink);border-radius:16px;background:var(--card);font-size:.95rem;max-height:28vh;overflow-y:auto;min-height:3.2em}
+.ctl{display:flex;gap:12px;margin-top:10px;justify-content:center;flex-wrap:wrap}
+button{background:var(--accent);color:#fff;border:2px solid var(--accent);border-radius:12px;padding:12px 18px;font-weight:700;font-size:1rem;cursor:pointer}
+button:hover{background:var(--accent-h)}
+button.alt{background:transparent;color:var(--ink);border-color:var(--ink)}
+button.alt:hover{background:transparent;opacity:.7}
+#go{min-width:130px}
+.note{margin:8px 0 0;font-size:.85rem;opacity:.7;text-align:center}
+.shape{stroke:#1E1540;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.pop{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.4)}
+.pop.on{animation:pop .5s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.cur{filter:drop-shadow(0 0 7px var(--accent))}
+.t{opacity:0;fill:var(--ink);text-anchor:middle;font-size:13px}
+.t.on{animation:fade .4s ease forwards}
+.ct{fill:#1E1540;font-weight:700;font-size:14px}
+.cs{fill:#1E1540;font-size:11.5px}
+.bt{fill:#1E1540;text-anchor:middle;font-weight:700;font-size:14px}
+.gt{fill:var(--ink);text-anchor:middle;font-size:11px;font-weight:700}
+.ln{fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1000;stroke-dashoffset:1000}
+.ln.on{animation:dash 1.2s ease-out forwards}
+@keyframes dash{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+.pop.done{opacity:1;transform:none;animation:none}
+.t.done{opacity:1;animation:none}
+.ln.done{stroke-dashoffset:0;animation:none}
+</style>
+</head>
+<body>
+<h1>Szószerkezetek és az állítmány</h1>
+<p class="sub">Példákkal, lépésről lépésre – a tananyag tagolása szerint.</p>
+<div class="card"><div id="vp"><svg viewBox="0 0 400 4450" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Szószerkezetek, mellérendelés és az állítmány kockákkal és példákkal"></svg></div></div>
+<div id="panel">
+<div id="cap" aria-live="polite">Nyomd meg az „Indítás” gombot, vagy lépkedj a nyilakkal.</div>
+<div class="ctl"><button id="prev" class="alt" aria-label="Előző">◀</button><button id="go">▶ Indítás</button><button id="nxt" class="alt" aria-label="Következő">▶</button><button id="snd" class="alt" aria-label="Hang">🔊</button></div>
+<p class="note" id="note"></p>
+</div>
+<script>
+(function(){
+function D(d){return d?' style="animation-delay:'+d+'s"':'';}
+function G(s,d,inner){return '<g class="pop" data-seg="'+s+'"'+D(d)+'>'+inner+'</g>';}
+function H(s,y,t,fs){return '<text class="t" data-seg="'+s+'" x="200" y="'+y+'" style="font-size:'+(fs||17)+'px;font-weight:700">'+t+'</text>';}
+function T(s,x,y,t,st,d){return '<text class="t" data-seg="'+s+'" x="'+x+'" y="'+y+'" style="'+(st||'')+(d?';animation-delay:'+d+'s':'')+'">'+t+'</text>';}
+function C(s,x,y,w,h,f,ti,subs,d){subs=subs||[];var o='<rect class="shape" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12" fill="'+f+'"/>';
+ if(subs.length){o+='<text class="ct" x="'+(x+12)+'" y="'+(y+22)+'">'+ti+'</text>';for(var i=0;i<subs.length;i++)o+='<text class="cs" x="'+(x+12)+'" y="'+(y+40+i*16)+'">'+subs[i]+'</text>';}
+ else o+='<text class="ct" x="'+(x+12)+'" y="'+(y+h/2+5)+'" style="font-size:13px">'+ti+'</text>';
+ return G(s,d,o);}
+var N_='#7DB8FF',V_='#FF8097',A_='#F6C945',U_='#5FD6A4',H_='#4FD1C5',G_='#C5CBD6',OR='#FFB27A',YE='#FFE08A',RA='#9BE8B8';
+function W(t){return Math.max(54,Math.round(t.length*9.5+22));}
+function BR(s,x,y,w,t,c,d){var n=Math.max(1,Math.floor(w/28)),sw=14,g=(w-n*sw)/(n+1),st='';for(var i=0;i<n;i++)st+='<rect class="shape" x="'+(x+g+i*(sw+g)).toFixed(1)+'" y="'+(y-7)+'" width="'+sw+'" height="10" rx="3" fill="'+c+'"/>';
+ return G(s,d,st+'<rect class="shape" x="'+x+'" y="'+y+'" width="'+w+'" height="40" rx="6" fill="'+c+'"/><text class="bt" x="'+(x+w/2)+'" y="'+(y+26)+'" style="font-size:15px">'+t+'</text>');}
+function row(s,x,y,list,d,step,gap){gap=gap==null?2:gap;var m='',cx=x,c=[];list.forEach(function(e,i){var w=e[2]||W(e[0]);m+=BR(s,cx,y,w,e[0],e[1],(d||0)+i*(step||0));c.push(cx+w/2);cx+=w+gap;});return {m:m,x:cx-gap,c:c,x0:x};}
+function rowW(list,gap){gap=gap==null?2:gap;var t=0;list.forEach(function(e){t+=e[2]||W(e[0]);});return t+(list.length-1)*gap;}
+function cx0(list,gap){return (400-rowW(list,gap))/2;}
+function BANNER(s,y,t,d){return G(s,d,'<rect class="shape" x="15" y="'+y+'" width="370" height="56" rx="14" fill="#7C3AED"/><text x="200" y="'+(y+35)+'" style="fill:#fff;font-size:19px;font-weight:700;text-anchor:middle">'+t+'</text>');}
+function NUM(s,y,n,t,d){return G(s,d,'<circle class="shape" cx="34" cy="'+(y-5)+'" r="13" fill="#F6C945"/><text class="bt" x="34" y="'+y+'" style="font-size:14px">'+n+'</text><text class="gt" x="58" y="'+y+'" style="text-anchor:start;font-size:16px">'+t+'</text>');}
+function BRK(s,x1,x2,y,d){return '<path class="ln" data-seg="'+s+'" pathLength="1000" style="animation-delay:'+d+'s" d="M'+x1+' '+y+' V'+(y+8)+' H'+x2+' V'+y+'"/>';}
+function LN(s,x1,y1,x2,y2,d){return '<path class="ln" data-seg="'+s+'" pathLength="1000" style="animation-delay:'+d+'s" d="M'+x1+' '+y1+' L'+x2+' '+y2+'"/>';}
+function LB(s,list,y,labels,d){var o='';labels.forEach(function(l,i){o+=T(s,list[i],y,l,'font-size:11px;font-weight:700',d+i*.3);});return o;}
+function TY(s,x,y,kind,name,sub,d){var cx=x+57.5,cy=y+32,ic='',h=100;
+ if(kind===0)ic='<circle class="shape" cx="'+(cx-18)+'" cy="'+cy+'" r="12" fill="#FFD6A5"/><circle class="shape" cx="'+(cx+18)+'" cy="'+cy+'" r="12" fill="#FFD6A5"/><text class="bt" x="'+cx+'" y="'+(cy+6)+'" style="font-size:16px">⇄</text>';
+ if(kind===1)ic='<path class="shape" fill="none" d="M'+cx+' '+(cy-2)+' V'+(cy+10)+'"/><circle class="shape" cx="'+cx+'" cy="'+(cy-14)+'" r="12" fill="#F6C945"/><circle class="shape" cx="'+cx+'" cy="'+(cy+18)+'" r="9" fill="#BDE0FE"/>';
+ if(kind===2)ic='<path class="shape" fill="none" d="M'+cx+' '+(cy-6)+' L'+(cx-20)+' '+(cy+10)+' M'+cx+' '+(cy-6)+' L'+(cx+20)+' '+(cy+10)+'"/><circle class="shape" cx="'+cx+'" cy="'+(cy-14)+'" r="10" fill="'+OR+'"/><circle class="shape" cx="'+(cx-22)+'" cy="'+(cy+16)+'" r="9" fill="'+N_+'"/><circle class="shape" cx="'+(cx+22)+'" cy="'+(cy+16)+'" r="9" fill="'+N_+'"/>';
+ if(kind>=3){h=84;cy=y+30;
+  if(kind===3)ic='<rect class="shape" x="'+(cx-17)+'" y="'+(cy-12)+'" width="34" height="24" rx="5" fill="'+N_+'"/>';
+  if(kind===4)ic='<rect class="shape" x="'+(cx-17)+'" y="'+(cy-12)+'" width="34" height="24" rx="5" fill="'+V_+'"/>';
+  if(kind===5)ic='<rect class="shape" x="'+(cx-35)+'" y="'+(cy-12)+'" width="34" height="24" rx="5" fill="'+N_+'"/><rect class="shape" x="'+(cx+1)+'" y="'+(cy-12)+'" width="34" height="24" rx="5" fill="'+V_+'"/>';}
+ return G(s,d,'<rect class="shape" x="'+x+'" y="'+y+'" width="115" height="'+h+'" rx="12" fill="#FFF4D6"/>'+ic+'<text class="bt" x="'+cx+'" y="'+(y+h-24)+'" style="font-size:12px">'+name+'</text><text class="bt" x="'+cx+'" y="'+(y+h-9)+'" style="font-size:10px;font-weight:400">'+sub+'</text>');}
+var o=[],r,x0;
+var SENT=[['Peti',N_],['szereti',V_],['a',G_],['történelmet',N_]];
+// 0 Szószerkezetek – áttekintés
+o.push(BANNER(0,18,'Szószerkezetek',0));
+['1. Fogalma','2. Valódi szószerkezet','3. Álszószerkezet','4. A szószerkezetek fajtái'].forEach(function(t,i){o.push(G(0,.6+i*.6,'<rect class="shape" x="60" y="'+(96+i*36)+'" width="280" height="28" rx="14" fill="'+['#BDE0FE','#B9FBC0','#E2E5EC','#FFD6A5'][i]+'"/><text class="bt" x="200" y="'+(115+i*36)+'" style="font-size:13px">'+t+'</text>'));});
+// 1 Fogalma
+o.push(NUM(1,266,'1.','Fogalma'));
+r=row(1,cx0([['nagy'],['ház']]),290,[['nagy',A_],['ház',N_]],.3,.5);o.push(r.m);
+o.push(BRK(1,r.x0,r.x,336,1.2));o.push(T(1,200,364,'szószerkezet','font-size:13px;font-weight:700',1.8));
+o.push(C(1,20,380,360,56,'#FFF4D6','Két vagy több szó',['nyelvtani kapcsolatban áll egymással'],2.4));
+// 2 Valódi
+o.push(NUM(2,470,'2.','Valódi szószerkezet'));
+o.push(T(2,200,492,'két alapszófajú szó kapcsolata','font-size:12px',.3));
+r=row(2,cx0([['piros'],['labda']]),510,[['piros',A_],['labda',N_]],.6,.5);o.push(r.m);o.push(LB(2,r.c,566,['melléknév','főnév'],1.4));
+r=row(2,cx0([['gyorsan'],['fut']]),582,[['gyorsan',H_],['fut',V_]],2.2,.5);o.push(r.m);o.push(LB(2,r.c,638,['határozószó','ige'],3));
+// 3 Álszó
+o.push(NUM(3,676,'3.','Álszószerkezet'));
+o.push(T(3,200,698,'egy alapszófajú szó és egy viszonyszó kapcsolata','font-size:12px',.3));
+r=row(3,cx0([['a'],['labda']]),716,[['a',G_],['labda',N_]],.6,.5);o.push(r.m);o.push(LB(3,r.c,772,['névelő','főnév'],1.4));
+r=row(3,cx0([['asztal'],['alatt']]),790,[['asztal',N_],['alatt',G_]],2.2,.5);o.push(r.m);o.push(LB(3,r.c,846,['főnév','névutó'],3));
+o.push(T(3,200,874,'a viszonyszó egyedül nem áll meg: alatt – mi alatt?','font-size:12px',4));
+// 4 Fajták
+o.push(NUM(4,910,'4.','A szószerkezetek fajtái'));
+o.push(TY(4,15,928,0,'A) Hozzárendelő','alany + állítmány',.3));o.push(TY(4,142,928,1,'B) Alárendelő','alaptag + bővítmény',1.1));o.push(TY(4,269,928,2,'C) Mellérendelő','egyenrangú tagok',1.9));
+// 5–8 Hozzárendelő
+o.push(BANNER(5,1060,'A szószerkezetek részletesen',0));
+o.push(NUM(5,1146,'1.','A hozzárendelő szószerkezet',.6));
+o.push(T(5,200,1168,'az alany és az állítmány kapcsolata','font-size:12px',1));
+r=row(5,cx0(SENT),1188,SENT,1.4,.4);o.push(r.m);var R5=r;
+o.push(T(6,R5.c[1],1246,'állítmány','font-size:11px;font-weight:700',.4));
+o.push(C(6,20,1258,360,56,'#FFD6A5','Mit állítunk Petiről?',['→ Szereti. Ez az állítmány.'],.8));
+o.push(T(7,R5.c[0],1246,'alany','font-size:11px;font-weight:700',.4));
+o.push(C(7,20,1326,360,56,'#B9FBC0','Ki szereti?',['→ Peti. Ez az alany.'],.8));
+o.push(T(8,200,1414,'Egyeztetés: számban és személyben','font-size:13px;font-weight:700'));
+r=row(8,cx0([['Peti'],['olvas']],44),1430,[['Peti',N_],['olvas',V_]],.4,.5,44);o.push(r.m);
+o.push(T(8,(r.c[0]+r.c[1])/2,1457,'⇄','font-size:22px;font-weight:700',.9));o.push(T(8,200,1482,'egyes szám · 3. személy','font-size:11px',1.2));
+r=row(8,cx0([['gyerekek'],['olvasnak']],44),1500,[['gyerekek',N_],['olvasnak',V_]],2,.5,44);o.push(r.m);
+o.push(T(8,(r.c[0]+r.c[1])/2,1527,'⇄','font-size:22px;font-weight:700',2.5));o.push(T(8,200,1552,'többes szám · 3. személy','font-size:11px',2.8));
+// 9–12 Alárendelő
+o.push(NUM(9,1594,'2.','Az alárendelő szószerkezet'));
+r=row(9,cx0(SENT),1614,SENT,.2,.4);
+o.push(r.m);
+var la=r.c[2]-27,rt=r.c[3]+W('történelmet')/2;
+o.push(BRK(9,la,rt,1662,1.4));o.push(T(9,(la+rt)/2,1688,'tárgy','font-size:12px;font-weight:700',2));
+o.push(C(9,20,1704,360,56,'#FFD6A5','Mit szeret Peti?',['→ A történelmet. Ez a tárgy.'],2.6));
+o.push(BR(10,200-W('szereti')/2,1788,W('szereti'),'szereti',OR,.2));o.push(T(10,262,1813,'alaptag','text-anchor:start;font-size:12px;font-weight:700',.8));
+o.push(G(10,.8,'<polygon style="fill:var(--ink)" points="194,1834 206,1834 206,1850 214,1850 200,1864 186,1850 194,1850"/>'));
+o.push(BR(10,200-W('a történelmet')/2,1872,W('a történelmet'),'a történelmet',YE,1.4));o.push(T(10,282,1897,'bővítmény','text-anchor:start;font-size:12px;font-weight:700',1.8));
+o.push(NUM(11,1954,'3.','A szószerkezet jelölése'));
+o.push(T(11,200,1976,'a bővítmény fajtája alapján nevezzük el','font-size:12px',.3));
+r=row(11,cx0([['szereti'],['a történelmet']]),1996,[['szereti',OR],['a történelmet',YE]],.6,.5);o.push(r.m);
+o.push(LN(11,r.c[1],2038,r.c[1],2056,1.4));
+o.push(G(11,1.8,'<circle class="shape" cx="'+r.c[1]+'" cy="2076" r="18" fill="#FFD6A5"/><text class="bt" x="'+r.c[1]+'" y="2082" style="font-size:18px">T</text>'));
+o.push(T(11,r.c[1]+28,2081,'tárgy','text-anchor:start;font-size:12px;font-weight:700',2.2));
+o.push(C(11,20,2110,360,60,'#FFD6A5','Tárgyas alárendelő szószerkezet',['jelölése: T (tárgy)'],2.6));
+o.push(NUM(12,2210,'4.','Az alárendelő szószerkezet jellemzője'));
+o.push(BR(12,150,2236,100,'alaptag',OR,.2));o.push(T(12,275,2262,'fölérendelt','text-anchor:start;font-size:12px',.8));
+o.push(T(12,200,2308,'⇅','font-size:28px;font-weight:700',1));
+o.push(BR(12,142,2326,116,'bővítmény',YE,1.4));o.push(T(12,275,2352,'alárendelt','text-anchor:start;font-size:12px',1.8));
+o.push(C(12,20,2386,360,64,'#E4D9FF','Alá-fölérendeltségi kapcsolat',['az egyik tag az alaptag, a másik a neki alárendelt bővítmény'],2.4));
+// 13–16 Mellérendelő
+o.push(BANNER(13,2484,'Szószerkezetek fajtái 2.',0));
+o.push(NUM(13,2574,'1.','Mellérendelő szószerkezet',.6));
+o.push(T(13,200,2596,'tagjai azonos mondatrészek, egy szinten állnak','font-size:12px',1));
+o.push(G(13,1.2,'<path d="M30 2618 H370" style="stroke:var(--ink)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>'));
+var xs=(400-(92+36+101.5))/2;
+r=row(13,xs,2630,[['alma',N_],['t',RA,30]],1.6,.3);o.push(r.m);
+r=row(13,xs+92+36,2630,[['körte',N_],['t',RA,30]],2.4,.3);o.push(r.m);
+o.push(T(13,200,2686,'ugyanaz a szerep (tárgy), ugyanaz a toldalék','font-size:11.5px',3.2));
+o.push(C(13,20,2702,360,56,'#E4D9FF','Egy szinten állnak',['szófajuk és toldalékolásuk általában azonos'],3.8));
+[[14,'A) Kapcsolatos mellérendelő szószerkezet','és',2796],[15,'B) Választó mellérendelő szószerkezet','vagy',2908],[16,'C) Ellentétes mellérendelő szószerkezet','de',3016]].forEach(function(q){
+ var s=q[0],y=q[3],lst=s===16?[['szép',A_],[',',G_,30],['de',G_],['okos',A_]]:[['szép',A_],[q[2],G_],['okos',A_]];
+ o.push(H(s,y,q[1],15));r=row(s,cx0(lst),y+18,lst,.4,.5);o.push(r.m);
+ o.push(T(s,200,y+74,'kötőszava: '+q[2],'font-size:13px;font-weight:700',1.8));});
+// 17–19 Állítmány
+o.push(BANNER(17,3128,'Az állítmány',0));
+o.push(NUM(17,3216,'1.','Fogalma',.6));
+o.push(T(17,200,3238,'az a mondatrész, amely az alanyról állít valamit','font-size:12px',1));
+r=row(17,cx0([['Peti'],['olvas']],70),3256,[['Peti',N_],['olvas',V_]],1.4,.8,70);o.push(r.m);
+var gx=(r.c[0]+W('Peti')/2+r.c[1]-W('olvas')/2)/2;
+o.push(G(17,2,'<polygon style="fill:var(--ink)" points="'+(gx-20)+',3272 '+(gx)+',3272 '+(gx)+',3264 '+(gx+14)+',3276 '+(gx)+',3288 '+(gx)+',3280 '+(gx-20)+',3280"/>'));
+o.push(T(17,gx-3,3256,'állít','font-size:11px;font-weight:700',2.2));
+o.push(LB(17,r.c,3312,['alany','állítmány'],2.6));
+o.push(NUM(18,3350,'2.','Kérdése'));
+o.push(G(18,.4,'<rect class="shape" x="50" y="3368" width="300" height="42" rx="14" fill="#fff"/><text class="bt" x="200" y="3395" style="font-size:15px">Mit állítunk az alanyról?</text>'));
+o.push(T(18,200,3440,'a mondatban az ige általában állítmány','font-size:12px',1.2));
+r=row(18,cx0([['olvas'],['fut'],['alszik']],12),3458,[['olvas',V_],['fut',V_],['alszik',V_]],1.8,.5,12);o.push(r.m);
+o.push(T(18,200,3514,'ige → általában állítmány','font-size:12px;font-weight:700',3.4));
+o.push(NUM(19,3552,'3.','Az állítmány fajtái'));
+o.push(TY(19,15,3570,3,'A) Névszói','névszó',.3));o.push(TY(19,142,3570,4,'B) Igei','ige',1));o.push(TY(19,269,3570,5,'C) Névszói-igei','névszó + ige',1.7));
+// 20–22
+o.push(H(20,3686,'A) Névszói állítmány',15));
+r=row(20,cx0([['Peti'],['diák']],40),3704,[['Peti',N_],['diák',N_]],.4,.6,40);o.push(r.m);
+o.push(T(20,(r.c[0]+r.c[1])/2,3731,'=','font-size:22px;font-weight:700',.9));
+o.push(LB(20,r.c,3760,['alany','állítmány: névszó'],1.4));
+o.push(T(20,200,3786,'a névszó főnév, melléknév vagy számnév is lehet','font-size:12px',2.2));
+o.push(H(21,3822,'B) Igei állítmány',15));
+r=row(21,cx0([['Peti'],['olvas']],40),3840,[['Peti',N_],['olvas',V_]],.4,.6,40);o.push(r.m);
+o.push(LB(21,r.c,3896,['alany','állítmány: ige'],1.4));
+o.push(T(21,200,3920,'az ige fejezi ki, mit csinál az alany','font-size:12px',2.2));
+o.push(H(22,3958,'C) Névszói-igei állítmány',15));
+r=row(22,cx0([['Peti'],['boldog'],['volt']],20),3976,[['Peti',N_],['boldog',A_],['volt',V_]],.4,.6,20);o.push(r.m);
+o.push(LB(22,[r.c[0]],4040,['alany'],1.2));
+o.push(BRK(22,r.c[1]-W('boldog')/2,r.c[2]+W('volt')/2,4024,1.6));
+o.push(T(22,(r.c[1]+r.c[2])/2,4052,'névszó + létige = állítmány','font-size:12px;font-weight:700',2.2));
+o.push(T(22,200,4076,'létige: van, volt, lesz','font-size:12px',2.8));
+// 23 Összefoglalás
+o.push(H(23,4118,'Összefoglalás'));
+[['Valódi és álszószerkezet','alapszófaj+alapszófaj · alapszófaj+viszonyszó','#BDE0FE'],['Hozzá-, alá-, mellérendelő','három fajta szószerkezet','#CDB4FF'],['Alárendelő: alaptag + bővítmény','jelölése pl. tárgyasnál: T','#FFD6A5'],['Mellérendelő: és · vagy · de','kapcsolatos · választó · ellentétes','#B9FBC0'],['Az állítmány fajtái','névszói · igei · névszói-igei','#FDFFB6']].forEach(function(c,i){o.push(C(23,20,4136+i*56,360,48,c[2],c[0],[c[1]],i*.6));});
+var svg=document.querySelector('svg');svg.innerHTML=o.join('');
+
+var segs=[
+"Szószerkezetek. Négy dolgot nézünk meg: a fogalmát, a valódi szószerkezetet, az álszószerkezetet, és azt, hogy milyen fajtái vannak.",
+"Első pont: a fogalma. A szószerkezet az, amikor két vagy több szó nyelvtani kapcsolatban áll egymással. Például a nagy ház: a két szó összetartozik.",
+"Második pont: a valódi szószerkezet. Ez két alapszófajú szó kapcsolata. Például a piros labda, melléknév és főnév, vagy a gyorsan fut, határozószó és ige.",
+"Harmadik pont: az álszószerkezet. Ez egy alapszófajú szó és egy viszonyszó kapcsolata. Például a labda, névelő és főnév, vagy az asztal alatt, főnév és névutó. A viszonyszó egyedül nem áll meg: ha azt mondod, hogy alatt, azonnal kérdezed, hogy mi alatt?",
+"Negyedik pont: a szószerkezetek fajtái. Az A betű a hozzárendelő, a B az alárendelő, a C a mellérendelő szószerkezet.",
+"Nézzük meg részletesen! Először a hozzárendelő szószerkezetet. Ez az alany és az állítmány kapcsolata. Példamondatunk: Peti szereti a történelmet.",
+"Mit állítunk Petiről? Azt, hogy szereti. Ez az állítmány.",
+"Ki szereti? Peti. Ez az alany.",
+"Az alanyt és az állítmányt számban és személyben egyeztetjük. Ha Peti olvas, egyes szám harmadik személyű az állítmány. Ha a gyerekek olvasnak, többes szám harmadik személyű.",
+"Második pont: az alárendelő szószerkezet. Ugyanabban a mondatban kérdezzük: mit szeret Peti? A történelmet. Ez a tárgy.",
+"A szereti az alaptag, a történelmet pedig a bővítmény.",
+"Harmadik pont: az alárendelő szószerkezet jelölése. A szószerkezetet a bővítmény fajtája alapján nevezzük el. A szereti a történelmet tárgyas alárendelő szószerkezet. A jelölése: T, vagyis tárgy.",
+"Negyedik pont: az alárendelő szószerkezet jellemzője. A tagjai között alá-fölérendeltségi nyelvtani kapcsolat van. Az egyik tag az alaptag, a másik a neki alárendelt bővítmény.",
+"Szószerkezetek fajtái, második rész. Első pont: a mellérendelő szószerkezet. A tagjai azonos mondatrészek, és egy szinten állnak. A szófajuk és a toldalékolásuk általában azonos, például almát és körtét: mindkettő tárgy, mindkettő t ragos.",
+"Első fajtája a kapcsolatos mellérendelő szószerkezet. A kötőszava az és. Például: szép és okos.",
+"Második fajtája a választó mellérendelő szószerkezet. A kötőszava a vagy. Például: szép vagy okos.",
+"Harmadik fajtája az ellentétes mellérendelő szószerkezet. A kötőszava a de. Például: szép, de okos.",
+"Az állítmány. Első pont: a fogalma. Az állítmány az a mondatrész, amely az alanyról állít valamit. Például Peti olvas: Petiről azt állítjuk, hogy olvas.",
+"Második pont: a kérdése. Mit állítunk az alanyról? A mondatban az ige általában állítmány, például olvas, fut, alszik.",
+"Harmadik pont: az állítmány fajtái. Háromféle van: A, a névszói állítmány, B, az igei állítmány, és C, a névszói-igei állítmány.",
+"A névszói állítmány névszó, például főnév. Peti diák: a diák az állítmány, és nincs mellette ige.",
+"Az igei állítmány ige. Peti olvas: az olvas az állítmány.",
+"A névszói-igei állítmány két részből áll: egy névszóból és egy létigéből. Peti boldog volt: a boldog és a volt együtt az állítmány.",
+"Összefoglalva: a szószerkezet lehet valódi vagy álszószerkezet. Három fajtája van: hozzárendelő, alárendelő és mellérendelő. Az alárendelő tagjai az alaptag és a bővítmény, a tárgyas jelölése T. A mellérendelő kötőszavai: és, vagy, de. Az állítmány pedig lehet névszói, igei vagy névszói-igei."
+];
+var N=segs.length,cap=document.getElementById('cap'),note=document.getElementById('note'),go=document.getElementById('go');
+var prev=document.getElementById('prev'),nxt=document.getElementById('nxt'),snd=document.getElementById('snd'),vp=document.getElementById('vp'),panel=document.getElementById('panel');
+var run=0,voice=null,idx=-1,sound=!!window.speechSynthesis,playing=false,finished=false,timer=0,cum=[],tops=[],VBW=400;
+function pickVoice(){var v=(window.speechSynthesis&&speechSynthesis.getVoices())||[];voice=null;
+ for(var i=0;i<v.length;i++){if(/^hu/i.test(v[i].lang)){voice=v[i];break;}}}
+if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+(function(){var m=0;for(var i=0;i<N;i++){var es=svg.querySelectorAll('[data-seg="'+i+'"]'),tp=1e9;for(var j=0;j<es.length;j++){try{var b=es[j].getBBox();if(b.y+b.height>m)m=b.y+b.height;if(b.y<tp)tp=b.y;}catch(e){}}cum[i]=m+44;tops[i]=tp;}})();
+function px2(u){return u*svg.clientWidth/VBW;}
+function setH(u){vp.style.height=px2(u)+'px';}
+function fit(i){setH(cum[i]);var t0=vp.getBoundingClientRect().top+window.scrollY,bt=t0+px2(cum[i])-(window.innerHeight-panel.offsetHeight-12),tt=t0+px2(tops[i])-24;window.scrollTo({top:Math.max(0,Math.min(bt,tt)),behavior:'smooth'});}
+function label(){go.textContent=playing?'⏸ Szünet':(finished?'↻ Újra':(idx<0?'▶ Indítás':'▶ Folytatás'));snd.textContent=(window.speechSynthesis&&sound)?'🔊':'🔇';}
+function paint(i){
+ var all=svg.querySelectorAll('.on,.cur,.done');for(var a=0;a<all.length;a++)all[a].classList.remove('on','cur','done');
+ for(var j=0;j<i;j++){var d=svg.querySelectorAll('[data-seg="'+j+'"]');for(var k=0;k<d.length;k++)d[k].classList.add('done');}
+ void svg.getBoundingClientRect();
+ var els=svg.querySelectorAll('[data-seg="'+i+'"]');
+ for(var m=0;m<els.length;m++){els[m].classList.add('on');if(els[m].classList.contains('pop'))els[m].classList.add('cur');}
+ cap.innerHTML='<small style="opacity:.6">'+(i+1)+' / '+N+'</small><br>'+segs[i];
+ fit(i);
+}
+function after(){if(idx+1<N)goTo(idx+1);else{playing=false;finished=true;label();}}
+function goTo(i){
+ idx=i;finished=false;var token=++run;clearTimeout(timer);
+ if(window.speechSynthesis)speechSynthesis.cancel();
+ paint(i);label();
+ var t=segs[i];
+ if(sound&&window.speechSynthesis){
+  var u=new SpeechSynthesisUtterance(t);u.lang=voice?voice.lang:'hu-HU';if(voice)u.voice=voice;
+  var fin=function(){if(token===run&&playing)after();};
+  u.onend=fin;u.onerror=fin;speechSynthesis.speak(u);
+ }else if(playing){timer=setTimeout(function(){if(token===run&&playing)after();},Math.max(3,t.length*0.062)*1000+1200);}
+}
+function stop(){playing=false;run++;clearTimeout(timer);if(window.speechSynthesis)speechSynthesis.cancel();}
+go.addEventListener('click',function(){
+ pickVoice();
+ note.textContent=!window.speechSynthesis?'Ez a nézet nem támogatja a beszédet. Nyisd meg a linket Safariban vagy Chrome-ban, vagy lépkedj a nyilakkal.':(voice?'':'Nincs külön magyar hang, az eszköz alapértelmezett hangját próbálom.');
+ if(playing){stop();label();return;}
+ playing=true;
+ if(finished||idx<0)goTo(0);else goTo(idx);
+});
+prev.addEventListener('click',function(){stop();goTo(Math.max(0,idx<0?0:idx-1));});
+nxt.addEventListener('click',function(){stop();goTo(Math.min(N-1,idx+1));});
+snd.addEventListener('click',function(){if(!window.speechSynthesis)return;sound=!sound;if(!sound)speechSynthesis.cancel();if(playing)goTo(idx);else label();});
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight')nxt.click();if(e.key==='ArrowLeft')prev.click();});
+window.addEventListener('resize',function(){setH(idx<0?80:cum[idx]);});
+setH(80);
+label();
+})();
+</script>
+</body>
+</html>
